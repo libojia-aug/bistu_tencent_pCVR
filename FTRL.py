@@ -95,8 +95,13 @@ class FM_FTRL_machine(object):
 
         # calculate the first order contribution.
         for i in x:
+            # try:
+            # print x 
+            # print len(x)
+            # print len(z)
             sign = -1. if z[i] < 0. else 1.  # get sign of z[i]
-
+            # except BaseException:
+            
             if sign * z[i] <= L1:
                 w[i] = 0.
             else:

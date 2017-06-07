@@ -5,6 +5,7 @@ import os
 from FTRL import *
 import random
 from math import log
+
 import sys
 alldata = prepare()
 
@@ -41,12 +42,15 @@ def getData(path):
 #,sitesetID,positionType,
 #,userFeature
 
+
 def getXYorID(line):
     line_arr = line.split(',')
     trainLine = []
     trainLine.extend(line_arr[0:3])
     trainLine.extend(line_arr[6:8])
     trainLine.extend(alldata.getAll(line_arr[3], line_arr[4], line_arr[5]))
+    # print trainLine
+    # sys.exit()
     # print map(eval, trainLine[3:])
     return map(eval, trainLine[3:]), int(trainLine[0])
 
@@ -55,21 +59,23 @@ def getXYorID(line):
 random.seed(5)  # seed random variable for reproducibility
 #####################
 
+
+
 ####################
 #### PARAMETERS ####
 ####################
-reportFrequency = 10000
+reportFrequency = 1000
 trainingFile = './data/pre/train.csv'
 testingFile = './data/pre/test.csv'
 
 fm_dim = 4
 fm_initDev = .01
 
-alpha = .01
+alpha = .1
 beta = 1.
 
 alpha_fm = .01
-beta_fm = 0.06
+beta_fm = 1.
 
 p_D = 22
 D = 2 ** p_D
@@ -79,12 +85,14 @@ L2 = .1
 L1_fm = 2.0
 L2_fm = 3.0
 
+dropoutRate = 0.8
+
 n_epochs = 1
 
 
 # initialize a FM learner
-learner = FM_FTRL_machine(fm_dim, fm_initDev, L1, L2, L1_fm,
-                          L2_fm, D, alpha, beta, alpha_fm=alpha_fm, beta_fm=beta_fm)
+learner = FM_FTRL_machine(fm_dim, fm_initDev, L1, L2, L1_fm, L2_fm, D, alpha, beta, alpha_fm = alpha_fm, beta_fm = beta_fm, dropoutRate = dropoutRate)
+
 
 print("Start Training:")
 for e in range(n_epochs):
@@ -101,28 +109,30 @@ for e in range(n_epochs):
     else:
         learner.L1_fm = L1_fm
         learner.L2_fm = L2_fm
+
     loss_a = 0
     trainData = getData(trainingFile)
     for i in xrange(1, len(trainData)):
         x, y = getXYorID(trainData[i])
-        p = learner.predict(x)
+        p = learner.dropoutThenPredict(x)
         loss = logLoss(p, y)
-        # if i > 90000:
-        #     loss_a +=loss
-        # else:
-        learner.update(x, p, y)
+
+        if i > 90000:
+            loss_a +=loss
+        else:
+            learner.update(x, p, y)
         if i % reportFrequency == 0:
             print("Epoch %d\tcount: %d\tProgressive Loss: %f" % (e, i, loss))
-        # if i % 100000 == 0:
-        #     print("Progressive Loss: %f" % (loss_a/10000))
-        #     sys.exit()
+        if i % 100000 == 0:
+            print("Progressive Loss: %f" % (loss_a/10000))
+            sys.exit()
 
     file_object = open(outputTestingFile, 'w+')
     file_object.write('instanceID, prob' + '\n')
     testData = getData(testingFile)
     for j in xrange(1, len(testData)):
         x, instanceID = getXYorID(testData[j])
-        p = learner.predict(x)
+        p = learner.predictWithDroppedOutModel(x)
         file_object.write("%i,%f\n" % (instanceID, p))
         if j % reportFrequency == 0:
             print("Epoch %d\tcount: %d" % (e, j))
