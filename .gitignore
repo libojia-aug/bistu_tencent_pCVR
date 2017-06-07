@@ -1,3 +1,5 @@
 /data
 /output
 *.pyc
+/bistu_tencent_pCVR_features/input
+/bistu_tencent_pCVR_features/output
